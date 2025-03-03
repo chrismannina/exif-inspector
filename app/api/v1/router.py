@@ -7,4 +7,4 @@ from app.api.v1.endpoints import router as exif_router
 api_router = APIRouter()
 
 # Include the EXIF router
-api_router.include_router(exif_router, prefix="/exif") 
+api_router.include_router(exif_router, prefix="/exif")

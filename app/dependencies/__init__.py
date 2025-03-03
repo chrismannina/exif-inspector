@@ -1,1 +1,1 @@
-"""FastAPI dependency injections""" 
+"""FastAPI dependency injections"""

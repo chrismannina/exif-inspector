@@ -19,10 +19,10 @@ limiter = Limiter(key_func=get_remote_address)
 async def root(request: Request) -> Dict[str, str]:
     """
     Root endpoint to verify API is running.
-    
+
     Args:
         request: The request object for rate limiting
-        
+
     Returns:
         A dictionary with a status message
     """
@@ -34,20 +34,20 @@ async def root(request: Request) -> Dict[str, str]:
 async def health_check(request: Request, _=Depends(check_exiftool)) -> Dict[str, Any]:
     """
     Health check endpoint to verify dependencies are installed.
-    
+
     Args:
         request: The request object for rate limiting
         _: Dependency to check if ExifTool is available
-        
+
     Returns:
         A dictionary with health status, message, and configuration details
     """
     return {
-        "status": "healthy", 
+        "status": "healthy",
         "message": "EXIF Checker API is healthy",
         "config": {
             "max_file_size": settings.MAX_FILE_SIZE,
             "version": "1.0.0",
-            "environment": settings.ENVIRONMENT
-        }
-    } 
+            "environment": settings.ENVIRONMENT,
+        },
+    }

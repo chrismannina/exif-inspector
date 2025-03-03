@@ -1,1 +1,1 @@
-"""Pydantic models for data validation""" 
+"""Pydantic models for data validation"""

@@ -58,11 +58,13 @@ add_middleware(app)
 # Add static files
 app.mount("/static", StaticFiles(directory=str(settings.STATIC_DIR)), name="static")
 
+
 # Root route
 @app.get("/", include_in_schema=False)
 async def root():
     """Redirect to UI."""
     return RedirectResponse(url="/ui")
+
 
 # UI route
 @app.get("/ui", response_class=HTMLResponse, include_in_schema=False)
@@ -73,6 +75,7 @@ async def ui():
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="UI not found")
+
 
 # Add custom OpenAPI endpoints
 @app.get("/docs", include_in_schema=False)
@@ -86,6 +89,7 @@ async def custom_swagger_ui_html():
         swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
     )
 
+
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html():
     """ReDoc documentation."""
@@ -95,27 +99,29 @@ async def redoc_html():
         redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js",
     )
 
+
 # Custom OpenAPI schema
 def custom_openapi():
     """Generate custom OpenAPI schema."""
     if app.openapi_schema:
         return app.openapi_schema
-    
+
     openapi_schema = get_openapi(
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
         description=settings.PROJECT_DESCRIPTION,
         routes=app.routes,
     )
-    
+
     # Add custom OpenAPI tags
     openapi_schema["tags"] = [
         {"name": "Health", "description": "Health check endpoints"},
         {"name": "EXIF", "description": "EXIF data extraction endpoints"},
     ]
-    
+
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 app.openapi = custom_openapi
 
@@ -139,7 +145,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     """
     return JSONResponse(
         status_code=exc.status_code,
-        content=ErrorResponse(detail=str(exc.detail)).dict()
+        content=ErrorResponse(detail=str(exc.detail)).dict(),
     )
 
 
@@ -152,7 +158,7 @@ async def general_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {str(exc)}")
     return JSONResponse(
         status_code=500,
-        content=ErrorResponse(detail="An unexpected error occurred").dict()
+        content=ErrorResponse(detail="An unexpected error occurred").dict(),
     )
 
 
@@ -161,11 +167,11 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def startup_event():
     """Log application startup and verify settings."""
     logger.info("Starting EXIF Checker API")
-    
+
     # Log the MAX_FILE_SIZE setting to verify it's correctly loaded
     logger.info(f"MAX_FILE_SIZE setting: {settings.MAX_FILE_SIZE} MB")
     logger.info(f"Maximum upload size: {max_file_size_bytes} bytes")
-    
+
     # Ensure temporary directory exists
     ensure_directory_exists(settings.TEMP_DIR)
     logger.info(f"Temporary directory set up at {settings.TEMP_DIR}")
@@ -176,7 +182,7 @@ async def startup_event():
 def cleanup():
     """Clean up resources."""
     logger.info("Cleaning up resources")
-    
+
     # Clean up temporary files
     try:
         temp_dir = settings.TEMP_DIR
@@ -186,4 +192,4 @@ def cleanup():
                     file.unlink()
         logger.info("Temporary files cleaned up")
     except Exception as e:
-        logger.error(f"Error cleaning up: {str(e)}") 
+        logger.error(f"Error cleaning up: {str(e)}")
