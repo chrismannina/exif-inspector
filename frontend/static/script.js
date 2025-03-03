@@ -10,13 +10,27 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('results').innerHTML = 'No results yet. Use one of the forms above to analyze images.';
     });
     
-    // Fetch the max file size from the server
+    // Fetch the application info from the server
     fetch('/health')
         .then(response => response.json())
         .then(data => {
+            // Set max file size
             if (data.config && data.config.max_file_size) {
                 window.maxFileSizeMB = data.config.max_file_size;
                 console.log(`Max file size from server: ${window.maxFileSizeMB} MB`);
+                
+                // Update file size notices in the UI
+                document.querySelectorAll('.file-size-limit').forEach(el => {
+                    el.textContent = `Maximum file size: ${window.maxFileSizeMB} MB`;
+                });
+            }
+            
+            // Set version info if available
+            if (data.config && data.config.version) {
+                const versionEl = document.getElementById('app-version');
+                if (versionEl) {
+                    versionEl.textContent = `v${data.config.version}`;
+                }
             }
         })
         .catch(error => {
@@ -51,25 +65,29 @@ function setupFormHandler(formId, endpoint) {
         const maxSizeMB = window.maxFileSizeMB || 50; // Use server config or default to 50MB
         const maxSizeBytes = maxSizeMB * 1024 * 1024;
         let isFileTooLarge = false;
+        let largestFileSizeMB = 0;
 
         if (fileInput.multiple) {
             // For batch processing, check all files
             for (let i = 0; i < fileInput.files.length; i++) {
+                const fileSizeMB = (fileInput.files[i].size / (1024 * 1024)).toFixed(2);
                 if (fileInput.files[i].size > maxSizeBytes) {
                     isFileTooLarge = true;
-                    break;
+                    largestFileSizeMB = Math.max(largestFileSizeMB, fileSizeMB);
                 }
             }
         } else {
             // For single file uploads
+            const fileSizeMB = (fileInput.files[0].size / (1024 * 1024)).toFixed(2);
             if (fileInput.files[0].size > maxSizeBytes) {
                 isFileTooLarge = true;
+                largestFileSizeMB = fileSizeMB;
             }
         }
 
         // Warn if file is too large
         if (isFileTooLarge) {
-            if (!confirm(`Warning: One or more files exceed the maximum size of ${maxSizeMB} MB. The upload might fail. Do you want to continue anyway?`)) {
+            if (!confirm(`Warning: One or more files exceed the maximum size of ${maxSizeMB} MB (largest file: ${largestFileSizeMB} MB).\n\nThe server will reject files larger than ${maxSizeMB} MB. Do you want to continue anyway?`)) {
                 return;
             }
         }
