@@ -25,7 +25,8 @@ class Settings:
     ALLOWED_ORIGINS: List[str] = ["*"]
     
     # File settings
-    MAX_FILE_SIZE: float = float(os.getenv("MAX_FILE_SIZE", "10"))  # in MB
+    # Hardcoded to 50MB to ensure this is the value used
+    MAX_FILE_SIZE: float = 50.0  # in MB
     TEMP_DIR: Path = Path(os.getenv("TEMP_DIR", "temp_uploads"))
     
     # Static file settings
@@ -45,7 +46,10 @@ class Settings:
             self.ALLOWED_ORIGINS = ["*"]
         else:
             self.ALLOWED_ORIGINS = origins.split(",")
-    
+        
+        # Force MAX_FILE_SIZE to be 50MB regardless of environment
+        self.MAX_FILE_SIZE = 50.0
+
     def get_log_level(self) -> int:
         """Convert string log level to logging constant."""
         log_levels = {

@@ -4,6 +4,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.dependencies.exiftool import check_exiftool
+from app.core.config import settings
 
 # Create router
 router = APIRouter(tags=["Health"])
@@ -23,4 +24,10 @@ async def root(request: Request):
 @limiter.limit("30/minute")
 async def health_check(request: Request, _=Depends(check_exiftool)):
     """Health check endpoint to verify dependencies are installed."""
-    return {"status": "healthy", "message": "EXIF Checker API is healthy"} 
+    return {
+        "status": "healthy", 
+        "message": "EXIF Checker API is healthy",
+        "config": {
+            "max_file_size": settings.MAX_FILE_SIZE
+        }
+    } 

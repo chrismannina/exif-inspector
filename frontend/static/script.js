@@ -9,6 +9,21 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('clearResults').addEventListener('click', function() {
         document.getElementById('results').innerHTML = 'No results yet. Use one of the forms above to analyze images.';
     });
+    
+    // Fetch the max file size from the server
+    fetch('/health')
+        .then(response => response.json())
+        .then(data => {
+            if (data.config && data.config.max_file_size) {
+                window.maxFileSizeMB = data.config.max_file_size;
+                console.log(`Max file size from server: ${window.maxFileSizeMB} MB`);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching config:', error);
+            // Default if we can't get from server
+            window.maxFileSizeMB = 50;
+        });
 });
 
 function setupFormHandler(formId, endpoint) {
@@ -25,9 +40,42 @@ function setupFormHandler(formId, endpoint) {
             return;
         }
 
+        // Get file input
+        const fileInput = form.querySelector('input[type="file"]');
+        if (!fileInput || !fileInput.files.length) {
+            form.classList.add('was-validated');
+            return;
+        }
+
+        // Check file size before uploading
+        const maxSizeMB = window.maxFileSizeMB || 50; // Use server config or default to 50MB
+        const maxSizeBytes = maxSizeMB * 1024 * 1024;
+        let isFileTooLarge = false;
+
+        if (fileInput.multiple) {
+            // For batch processing, check all files
+            for (let i = 0; i < fileInput.files.length; i++) {
+                if (fileInput.files[i].size > maxSizeBytes) {
+                    isFileTooLarge = true;
+                    break;
+                }
+            }
+        } else {
+            // For single file uploads
+            if (fileInput.files[0].size > maxSizeBytes) {
+                isFileTooLarge = true;
+            }
+        }
+
+        // Warn if file is too large
+        if (isFileTooLarge) {
+            if (!confirm(`Warning: One or more files exceed the maximum size of ${maxSizeMB} MB. The upload might fail. Do you want to continue anyway?`)) {
+                return;
+            }
+        }
+
         // Get form data
         const formData = new FormData();
-        const fileInput = form.querySelector('input[type="file"]');
         if (fileInput) {
             if (fileInput.multiple) {
                 // For batch processing, append multiple files

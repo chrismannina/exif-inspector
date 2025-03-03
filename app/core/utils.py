@@ -76,7 +76,7 @@ def validate_file_size(file, max_size_mb=None):
     
     Args:
         file: UploadFile object
-        max_size_mb: Maximum allowed size in MB (default: from environment or 10MB)
+        max_size_mb: Maximum allowed size in MB (default: 50MB hardcoded)
         
     Returns:
         bool: True if file size is valid, False otherwise
@@ -85,8 +85,8 @@ def validate_file_size(file, max_size_mb=None):
         HTTPException: If file size exceeds the maximum allowed size
     """
     if max_size_mb is None:
-        # Get maximum file size from environment, default to 10MB
-        max_size_mb = float(os.getenv("MAX_FILE_SIZE", "10"))
+        # Hardcoded to 50MB to ensure consistency
+        max_size_mb = 50.0
     
     # Get file size in bytes
     file.file.seek(0, os.SEEK_END)

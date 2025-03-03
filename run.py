@@ -29,6 +29,7 @@ if __name__ == "__main__":
     
     # Development mode
     print(f"Starting development server at {args.host}:{args.port}")
+    
     uvicorn.run(
         "app.main:app", 
         host=args.host, 

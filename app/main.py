@@ -11,6 +11,8 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.datastructures import UploadFile
 
 from app.core.config import settings
 from app.models.exif import ErrorResponse
@@ -29,6 +31,9 @@ logger = logging.getLogger(__name__)
 # Initialize rate limiter
 limiter = Limiter(key_func=lambda x: x.client.host)
 
+# Calculate max file size in bytes
+max_file_size_bytes = int(settings.MAX_FILE_SIZE * 1024 * 1024)  # Convert MB to bytes
+
 # Create FastAPI application
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -37,6 +42,18 @@ app = FastAPI(
     docs_url=None,  # We'll serve these manually for custom paths/styling
     redoc_url=None,
 )
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add custom middleware
+add_middleware(app)
 
 # Add static files
 app.mount("/static", StaticFiles(directory=str(settings.STATIC_DIR)), name="static")
@@ -106,18 +123,6 @@ app.openapi = custom_openapi
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Add custom middleware
-add_middleware(app)
-
 # Include routers
 app.include_router(health_router)
 app.include_router(api_router, prefix=settings.API_V1_STR)
@@ -151,31 +156,34 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Clean up on shutdown
-@app.on_event("shutdown")
-def cleanup():
-    """
-    Clean up resources when shutting down.
-    """
-    logger.info("Cleaning up resources")
-    try:
-        # Delete all files in the temp directory
-        for item in settings.TEMP_DIR.glob("*"):
-            if item.is_file():
-                item.unlink()
-        logger.info("Temporary files cleaned up")
-    except Exception as e:
-        logger.error(f"Error during cleanup: {str(e)}")
-
-
-# Startup event
+# Startup event to verify settings
 @app.on_event("startup")
 async def startup_event():
-    """
-    Initialize resources on startup.
-    """
+    """Log application startup and verify settings."""
     logger.info("Starting EXIF Checker API")
     
-    # Ensure temp directory exists
+    # Log the MAX_FILE_SIZE setting to verify it's correctly loaded
+    logger.info(f"MAX_FILE_SIZE setting: {settings.MAX_FILE_SIZE} MB")
+    logger.info(f"Maximum upload size: {max_file_size_bytes} bytes")
+    
+    # Ensure temporary directory exists
     ensure_directory_exists(settings.TEMP_DIR)
-    logger.info(f"Temporary directory set up at {settings.TEMP_DIR}") 
+    logger.info(f"Temporary directory set up at {settings.TEMP_DIR}")
+
+
+# Shutdown event
+@app.on_event("shutdown")
+def cleanup():
+    """Clean up resources."""
+    logger.info("Cleaning up resources")
+    
+    # Clean up temporary files
+    try:
+        temp_dir = settings.TEMP_DIR
+        if temp_dir.exists():
+            for file in temp_dir.glob("*"):
+                if file.is_file():
+                    file.unlink()
+        logger.info("Temporary files cleaned up")
+    except Exception as e:
+        logger.error(f"Error cleaning up: {str(e)}") 

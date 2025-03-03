@@ -2,7 +2,7 @@
 import os
 from typing import List, Dict, Any
 from pathlib import Path
-from fastapi import APIRouter, File, UploadFile, Depends, Request, HTTPException
+from fastapi import APIRouter, File, UploadFile, Depends, Request, HTTPException, Form
 from fastapi.responses import JSONResponse, FileResponse
 import shutil
 import logging
@@ -50,7 +50,7 @@ async def analyze_exif(
         raise HTTPException(status_code=400, detail="Unsupported file format")
     
     # Validate file size
-    validate_file_size(file)
+    validate_file_size(file, max_size_mb=50.0)
     
     # Save the uploaded file
     temp_file_path = await exif_service.save_upload_file(file)
@@ -92,7 +92,7 @@ async def analyze_fuji_recipe(
         )
     
     # Validate file size
-    validate_file_size(file)
+    validate_file_size(file, max_size_mb=50.0)
     
     # Save the uploaded file
     temp_file_path = await exif_service.save_upload_file(file)
@@ -140,7 +140,7 @@ async def analyze_batch(
         
         try:
             # Validate file size
-            validate_file_size(file)
+            validate_file_size(file, max_size_mb=50.0)
             
             # Save the uploaded file
             temp_file_path = await exif_service.save_upload_file(file)
@@ -185,7 +185,7 @@ async def rename_proposal(
         raise HTTPException(status_code=400, detail="Unsupported file format")
     
     # Validate file size
-    validate_file_size(file)
+    validate_file_size(file, max_size_mb=50.0)
     
     # Save the uploaded file
     temp_file_path = await exif_service.save_upload_file(file)
